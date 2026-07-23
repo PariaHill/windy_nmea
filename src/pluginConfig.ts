@@ -1,16 +1,17 @@
 import type { ExternalPluginConfig } from '@windy/interfaces';
 
 const config: ExternalPluginConfig = {
-    name: 'windy-plugin-my-plugin',
+    name: 'windy-plugin-nmea',
     version: '0.1.0',
-    icon: '🔌',
-    title: 'This is my first plugin',
-    description: 'This is my first plugin.',
-    author: 'John Doe (optional company name)',
-    repository: 'https://github.com/windycom/windy-plugin-template',
+    icon: '📍',
+    title: 'NMEA Markers',
+    description: 'Display NMEA position markers on Windy.',
+    author: '',
+    repository: 'https://github.com/PariaHill/windy_nmea',
     desktopUI: 'rhpane',
-    mobileUI: 'fullscreen',
-    routerPath: '/my-plugin',
+    mobileUI: 'small',
+    desktopWidth: 260,
+    routerPath: '/nmea',
     private: true,
 };
 

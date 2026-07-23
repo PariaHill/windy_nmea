@@ -1,58 +1,88 @@
-# Windy Plugin Template
+# Windy NMEA Plugin
 
-Template for development of Windy Plugins.
+Windy plugin plus a small Windows bridge for showing a Trimble GPS NMEA position on the Windy map.
 
-**Documentation at: [https://docs.windy-plugins.com/](https://docs.windy-plugins.com/)**
+## What It Does
 
-**Documentation for the Leaflet GL library is at [https://windycom.github.io/LeafletGL/docs/](https://windycom.github.io/LeafletGL/docs/)**
+- Windy plugin displays the live GPS marker.
+- `windy-nmea-bridge.exe` reads Trimble raw TCP NMEA.
+- The bridge exposes a local WebSocket endpoint for the Windy plugin.
+- Settings are handled by the bridge at `http://127.0.0.1:8787/settings`.
 
-## Quick start
+## Windows Bridge
 
-- Install dependencies with `npm i`
-- Compile the plugin in watch mode with `npm start`
-- Navigate to <https://www.windy.com/developer-mode>
-- Load your plugin from the URL <https://localhost:9999/plugin.js>
-- Code away!
+Run:
 
-For running the examples:
+```powershell
+windy-nmea-bridge.exe
+```
 
-- Build the desired example in watch mode with `npm run example01` (or `example02`, etc.)
-- Load the example in Windy's developer mode using the URL <https://localhost:9999/example01/plugin.js>
+The settings page opens automatically. Configure:
 
-## Known issues
+- Trimble GPS IP
+- Trimble GPS port
+- Run automatically when Windows starts
+- Start receiving automatically when this program runs
 
-- In *example03* the boat orientation resets after the user zooms.
-This is likely related to Leaflet GL executing `zoom` events in slightly different order.
-Markers now also internally subscribe to the map's `zoom` event to update their CSS positioning,
-which likely executes *after* the user's `zoom` event in this example.
-- In *example04* map clicks within the rendered cycle do not fire the `singleclick` event, as they have before Leaflet LG.
+The Windy plugin bridge endpoint is:
 
-## CHANGELOG
+```text
+127.0.0.1:8787
+```
 
--   5.0.0
-    -   Updated example code for the new Leaflet GL map library introduced in client v49.0.0
--   4.2.2
-    -   New plugins are marked as private by default
--   4.2.1
-    -   Updated `@windycom/plugin-devtools` for client v46.1.0
--   4.2.0
-    -   Fixed compiler sourcemap error
--   4.1.0
-    -   Updated plugin upload URL
--   4.0.0
-    -   Updated `@windycom/plugin-devtools` for client v45.0.0
--   3.0.0
-    -   Updated `@windycom/plugin-devtools` for client v42.2.0
--   2.0.0
-    -   Completely new version of the plugin system based in Windy client v42+
--   1.0.0
-    -   New rollup compiler, no more riot architecture
-    -   Updated examples for Windy client v39
--   0.4.0
-    -   Added `plugin-data-loader` to the Plugins API
--   0.3.0
-    -   Examples moved to examples dir
--   0.2.0
-    -   Fixed wrong examples
--   0.1.1
-    -   Initial version of this repo
+## Windy Plugin Development
+
+Install dependencies:
+
+```powershell
+npm install
+```
+
+Start the Windy plugin dev server:
+
+```powershell
+npm start
+```
+
+Open Windy developer mode:
+
+```text
+https://www.windy.com/developer-mode
+```
+
+Load:
+
+```text
+https://localhost:9999/plugin.js
+```
+
+Select `GGA` or `RMC` in the plugin, then connect to:
+
+```text
+127.0.0.1:8787
+```
+
+## Build
+
+Build the Windy plugin on Windows:
+
+```powershell
+npm run build:win
+```
+
+Build the Windows bridge:
+
+```powershell
+cd bridge-native
+go build -trimpath -ldflags="-s -w -H windowsgui" -o ..\release\windy-nmea-bridge.exe .
+```
+
+## Release
+
+Pushing a tag like `v0.1.0` runs `.github/workflows/release.yml`.
+The release uploads:
+
+- `windy-nmea-bridge.exe`
+- `windy-plugin-nmea.zip`
+
+Publishing to Windy still uses `.github/workflows/publish-plugin.yml` and requires the GitHub Actions secret `WINDY_API_KEY`.

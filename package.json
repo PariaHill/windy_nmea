@@ -1,12 +1,13 @@
 {
-    "name": "windy-plugin-template",
-    "version": "5.0.1",
-    "description": "Template for developing Windy Plugins",
+    "name": "windy-plugin-nmea",
+    "version": "0.1.0",
+    "description": "Windy plugin for displaying NMEA position markers",
     "main": "dist/plugin.min.js",
     "type": "module",
     "scripts": {
         "build": "rm -rf dist && mkdir dist && SERVE=false rollup -c && cp package.json dist/",
-        "build:win": "rmdir /s /q dist && mkdir dist && set SERVE=false && rollup -c && copy package.json dist\\",
+        "clean": "node -e \"fs.rmSync('dist',{recursive:true,force:true});fs.mkdirSync('dist')\"",
+        "build:win": "npm run clean && set \"SERVE=false\" && rollup -c && copy package.json dist\\",
         "start": "rollup -w -c",
         "example01": "CONFIG=example01 rollup -w -c",
         "example02": "CONFIG=example02 rollup -w -c",
@@ -20,20 +21,23 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/windycom/windy-plugin-template.git"
+        "url": "git+https://github.com/PariaHill/windy_nmea.git"
     },
     "keywords": [
         "windy",
         "windy.com",
         "plugins"
     ],
-    "author": "Windyty, S.E.",
+    "author": "",
     "license": "ISC",
     "bugs": {
-        "url": "https://github.com/windycom/windy-plugin-template/issues"
+        "url": "https://github.com/PariaHill/windy_nmea/issues"
     },
-    "homepage": "https://docs.windy-plugins.com/",
+    "homepage": "https://github.com/PariaHill/windy_nmea#readme",
     "dependencies": {
         "@windycom/plugin-devtools": "^3.0.3"
+    },
+    "devDependencies": {
+        "@swc/core-win32-x64-msvc": "^1.15.46"
     }
 }

@@ -9,4 +9,7 @@ node_modules
 package-lock.json
 *.log
 dist/*
+work/
+release/
+bridge-native/dist/
 

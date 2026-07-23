@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Windy NMEA Bridge</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: Segoe UI, system-ui, sans-serif;
+            color: #1f2933;
+            background: #f4f6f8;
+        }
+        body {
+            margin: 0;
+            padding: 28px;
+        }
+        main {
+            max-width: 520px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin: 0 0 18px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        section {
+            margin-bottom: 16px;
+            padding: 18px;
+            border: 1px solid #d8dde6;
+            border-radius: 6px;
+            background: #fff;
+        }
+        label {
+            display: block;
+            margin-bottom: 14px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        input[type="text"],
+        input[type="number"] {
+            display: block;
+            box-sizing: border-box;
+            width: 100%;
+            margin-top: 6px;
+            padding: 9px 10px;
+            border: 1px solid #c7cdd6;
+            border-radius: 4px;
+            font: inherit;
+        }
+        .check {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        .status {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .status span:nth-child(odd) {
+            color: #52606d;
+            font-weight: 700;
+        }
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        button {
+            min-height: 34px;
+            padding: 0 14px;
+            border: 0;
+            border-radius: 4px;
+            background: #0b6bcb;
+            color: #fff;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        button.secondary {
+            background: #52606d;
+        }
+        button.danger {
+            background: #b42318;
+        }
+        .message {
+            min-height: 20px;
+            margin-top: 12px;
+            color: #52606d;
+            font-size: 13px;
+        }
+        code {
+            display: block;
+            margin-top: 6px;
+            padding: 8px;
+            border-radius: 4px;
+            background: #eef2f6;
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Windy NMEA Bridge</h1>
+
+    <section>
+        <label>
+            Trimble GPS IP
+            <input id="gpsHost" type="text" placeholder="192.168.0.10">
+        </label>
+        <label>
+            Trimble GPS Port
+            <input id="gpsPort" type="number" min="1" max="65535" placeholder="5017">
+        </label>
+        <label class="check">
+            <input id="runAtStartup" type="checkbox">
+            Run automatically when Windows starts
+        </label>
+        <label class="check">
+            <input id="startReceivingOnRun" type="checkbox">
+            Start receiving automatically when this program runs
+        </label>
+        <div class="actions">
+            <button id="save" type="button">Save</button>
+            <button id="start" class="secondary" type="button">Start Receiving</button>
+            <button id="stop" class="danger" type="button">Stop</button>
+        </div>
+        <div id="message" class="message"></div>
+    </section>
+
+    <section>
+        <div class="status">
+            <span>Receiving</span><strong id="running">-</strong>
+            <span>GPS TCP</span><strong id="connected">-</strong>
+            <span>Windy clients</span><strong id="clientCount">-</strong>
+            <span>Last data</span><strong id="lastDataAt">-</strong>
+            <span>Last error</span><strong id="lastError">-</strong>
+        </div>
+    </section>
+
+    <section>
+        Windy plugin bridge endpoint:
+        <code>127.0.0.1:8787</code>
+    </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+async function request(path, options) {
+    const response = await fetch(path, options);
+    if (!response.ok) {
+        throw new Error(await response.text());
+    }
+    return response.json();
+}
+
+function readConfig() {
+    return {
+        gpsHost: $('gpsHost').value.trim(),
+        gpsPort: Number($('gpsPort').value),
+        listenHost: '127.0.0.1',
+        listenPort: 8787,
+        runAtStartup: $('runAtStartup').checked,
+        startReceivingOnRun: $('startReceivingOnRun').checked
+    };
+}
+
+function writeConfig(config) {
+    $('gpsHost').value = config.gpsHost || '';
+    $('gpsPort').value = config.gpsPort || '';
+    $('runAtStartup').checked = Boolean(config.runAtStartup);
+    $('startReceivingOnRun').checked = Boolean(config.startReceivingOnRun);
+}
+
+function writeStatus(status) {
+    $('running').textContent = status.running ? 'Yes' : 'No';
+    $('connected').textContent = status.connected ? 'Connected' : 'Disconnected';
+    $('clientCount').textContent = status.clientCount;
+    $('lastDataAt').textContent = status.lastDataAt || '-';
+    $('lastError').textContent = status.lastError || '-';
+}
+
+async function refresh() {
+    const data = await request('/api/config');
+    writeConfig(data.config);
+    writeStatus(data.status);
+}
+
+async function action(path, message) {
+    $('message').textContent = '';
+    try {
+        await request(path, { method: 'POST' });
+        $('message').textContent = message;
+        await refresh();
+    } catch (error) {
+        $('message').textContent = error.message;
+    }
+}
+
+$('save').addEventListener('click', async () => {
+    $('message').textContent = '';
+    try {
+        await request('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(readConfig())
+        });
+        $('message').textContent = 'Saved.';
+        await refresh();
+    } catch (error) {
+        $('message').textContent = error.message;
+    }
+});
+
+$('start').addEventListener('click', () => action('/api/start', 'Receiving started.'));
+$('stop').addEventListener('click', () => action('/api/stop', 'Receiving stopped.'));
+
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>

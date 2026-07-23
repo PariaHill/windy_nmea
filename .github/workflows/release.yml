@@ -1,0 +1,46 @@
+name: release
+
+on:
+    push:
+        tags:
+            - 'v*'
+
+permissions:
+    contents: write
+
+jobs:
+    release:
+        runs-on: windows-latest
+        steps:
+            - uses: actions/checkout@v7
+
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+
+            - uses: actions/setup-go@v6
+              with:
+                  go-version-file: bridge-native/go.mod
+
+            - name: Build Windy plugin
+              run: |
+                  npm install
+                  npm run build:win
+
+            - name: Build native bridge
+              working-directory: bridge-native
+              run: |
+                  go mod download
+                  New-Item -ItemType Directory -Force -Path ..\release
+                  go build -trimpath -ldflags="-s -w -H windowsgui" -o ../release/windy-nmea-bridge.exe .
+
+            - name: Package plugin bundle
+              run: |
+                  Compress-Archive -Path dist\* -DestinationPath release\windy-plugin-nmea.zip -Force
+
+            - name: Create GitHub release
+              uses: softprops/action-gh-release@v2
+              with:
+                  files: |
+                      release/windy-nmea-bridge.exe
+                      release/windy-plugin-nmea.zip
