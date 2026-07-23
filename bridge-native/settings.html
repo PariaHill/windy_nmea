@@ -149,6 +149,8 @@
 
 <script>
 const $ = id => document.getElementById(id);
+let configLoaded = false;
+let formDirty = false;
 
 async function request(path, options) {
     const response = await fetch(path, options);
@@ -174,6 +176,7 @@ function writeConfig(config) {
     $('gpsPort').value = config.gpsPort || '';
     $('runAtStartup').checked = Boolean(config.runAtStartup);
     $('startReceivingOnRun').checked = Boolean(config.startReceivingOnRun);
+    formDirty = false;
 }
 
 function writeStatus(status) {
@@ -186,7 +189,10 @@ function writeStatus(status) {
 
 async function refresh() {
     const data = await request('/api/config');
-    writeConfig(data.config);
+    if (!configLoaded || !formDirty) {
+        writeConfig(data.config);
+        configLoaded = true;
+    }
     writeStatus(data.status);
 }
 
@@ -210,6 +216,7 @@ $('save').addEventListener('click', async () => {
             body: JSON.stringify(readConfig())
         });
         $('message').textContent = 'Saved.';
+        formDirty = false;
         await refresh();
     } catch (error) {
         $('message').textContent = error.message;
@@ -218,6 +225,14 @@ $('save').addEventListener('click', async () => {
 
 $('start').addEventListener('click', () => action('/api/start', 'Receiving started.'));
 $('stop').addEventListener('click', () => action('/api/stop', 'Receiving stopped.'));
+['gpsHost', 'gpsPort', 'runAtStartup', 'startReceivingOnRun'].forEach(id => {
+    $(id).addEventListener('input', () => {
+        formDirty = true;
+    });
+    $(id).addEventListener('change', () => {
+        formDirty = true;
+    });
+});
 
 refresh();
 setInterval(refresh, 2000);
