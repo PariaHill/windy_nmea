@@ -25,6 +25,7 @@ jobs:
             - name: Build Windy plugin
               run: |
                   npm install
+                  npm install --no-save @swc/core-win32-x64-msvc@$(node -p "require('@swc/core/package.json').version")
                   npm run build:win
 
             - name: Build native bridge

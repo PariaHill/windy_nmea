@@ -13,6 +13,7 @@ jobs:
             - name: Build
               run: |
                   npm install
+                  npm install --no-save @swc/core-linux-x64-gnu@$(node -p "require('@swc/core/package.json').version")
                   npm run build
             - name: Publish Plugin
               run: |

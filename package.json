@@ -36,8 +36,5 @@
     "homepage": "https://github.com/PariaHill/windy_nmea#readme",
     "dependencies": {
         "@windycom/plugin-devtools": "^3.0.3"
-    },
-    "optionalDependencies": {
-        "@swc/core-win32-x64-msvc": "^1.15.46"
     }
 }
