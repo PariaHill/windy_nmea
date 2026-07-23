@@ -6,7 +6,7 @@ const config: ExternalPluginConfig = {
     icon: '📍',
     title: 'NMEA Markers',
     description: 'Display NMEA position markers on Windy.',
-    author: '',
+    author: 'PariaHill',
     repository: 'https://github.com/PariaHill/windy_nmea',
     desktopUI: 'rhpane',
     mobileUI: 'small',
