@@ -21,6 +21,7 @@ The settings page opens automatically. Configure:
 
 - Trimble GPS IP
 - Trimble GPS port
+- Bridge port
 - Run automatically when Windows starts
 - Start receiving automatically when this program runs
 
@@ -36,6 +37,8 @@ The Windy plugin bridge endpoint is:
 ```text
 127.0.0.1:8787
 ```
+
+If you change the bridge port, use the same port in the Windy plugin.
 
 ## Windy Plugin Development
 

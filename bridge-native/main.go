@@ -58,6 +58,7 @@ type App struct {
 	clients  map[*websocket.Conn]bool
 	upgrader websocket.Upgrader
 	cancel   context.CancelFunc
+	restart  func(Config)
 }
 
 func defaultConfig() Config {
@@ -151,8 +152,9 @@ func setRunAtStartup(enabled bool) error {
 	return key.SetStringValue(appName, fmt.Sprintf(`"%s" --background`, exe))
 }
 
-func NewApp(cfg Config) *App {
+func NewApp(cfg Config, restart func(Config)) *App {
 	return &App{
+		restart: restart,
 		config:  cfg,
 		clients: map[*websocket.Conn]bool{},
 		upgrader: websocket.Upgrader{
@@ -310,6 +312,8 @@ func (a *App) handleConfig(w http.ResponseWriter, r *http.Request) {
 		}
 		a.mu.Lock()
 		wasRunning := a.status.Running
+		oldListenHost := a.config.ListenHost
+		oldListenPort := a.config.ListenPort
 		a.mu.Unlock()
 		if wasRunning {
 			a.stopReceiving()
@@ -321,6 +325,12 @@ func (a *App) handleConfig(w http.ResponseWriter, r *http.Request) {
 			a.startReceiving()
 		}
 		writeJSON(w, map[string]string{"ok": "true"})
+		if oldListenHost != cfg.ListenHost || oldListenPort != cfg.ListenPort {
+			go func() {
+				time.Sleep(300 * time.Millisecond)
+				a.restart(cfg)
+			}()
+		}
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
@@ -382,7 +392,10 @@ func openBrowser(url string) {
 
 func main() {
 	cfg := loadConfig()
-	app := NewApp(cfg)
+	restartCh := make(chan Config, 1)
+	app := NewApp(cfg, func(next Config) {
+		restartCh <- next
+	})
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", app.handleWebSocket)
 	mux.HandleFunc("/settings", app.handleSettings)
@@ -439,6 +452,23 @@ func main() {
 						return
 					}
 				}
+			}()
+
+			go func() {
+				next := <-restartCh
+				settingsURL = fmt.Sprintf(
+					"http://%s/settings",
+					net.JoinHostPort(next.ListenHost, strconv.Itoa(next.ListenPort)),
+				)
+				ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+				_ = server.Shutdown(ctx)
+				cancel()
+				time.Sleep(300 * time.Millisecond)
+				exe, err := os.Executable()
+				if err == nil {
+					_ = exec.Command(exe, "--background").Start()
+				}
+				systray.Quit()
 			}()
 		},
 		func() {

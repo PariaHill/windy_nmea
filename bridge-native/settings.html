@@ -115,6 +115,10 @@
             Trimble GPS Port
             <input id="gpsPort" type="number" min="1" max="65535" placeholder="5017">
         </label>
+        <label>
+            Bridge Port
+            <input id="listenPort" type="number" min="1" max="65535" placeholder="8787">
+        </label>
         <label class="check">
             <input id="runAtStartup" type="checkbox">
             Run automatically when Windows starts
@@ -143,7 +147,7 @@
 
     <section>
         Windy plugin bridge endpoint:
-        <code>127.0.0.1:8787</code>
+        <code id="bridgeEndpoint">127.0.0.1:8787</code>
     </section>
 </main>
 
@@ -165,7 +169,7 @@ function readConfig() {
         gpsHost: $('gpsHost').value.trim(),
         gpsPort: Number($('gpsPort').value),
         listenHost: '127.0.0.1',
-        listenPort: 8787,
+        listenPort: Number($('listenPort').value),
         runAtStartup: $('runAtStartup').checked,
         startReceivingOnRun: $('startReceivingOnRun').checked
     };
@@ -174,8 +178,10 @@ function readConfig() {
 function writeConfig(config) {
     $('gpsHost').value = config.gpsHost || '';
     $('gpsPort').value = config.gpsPort || '';
+    $('listenPort').value = config.listenPort || 8787;
     $('runAtStartup').checked = Boolean(config.runAtStartup);
     $('startReceivingOnRun').checked = Boolean(config.startReceivingOnRun);
+    $('bridgeEndpoint').textContent = `127.0.0.1:${config.listenPort || 8787}`;
     formDirty = false;
 }
 
@@ -210,13 +216,23 @@ async function action(path, message) {
 $('save').addEventListener('click', async () => {
     $('message').textContent = '';
     try {
+        const previousPort = Number(location.port || 8787);
+        const nextConfig = readConfig();
         await request('/api/config', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(readConfig())
+            body: JSON.stringify(nextConfig)
         });
-        $('message').textContent = 'Saved.';
+        $('message').textContent = previousPort === nextConfig.listenPort
+            ? 'Saved.'
+            : `Saved. Reopening settings on port ${nextConfig.listenPort}...`;
         formDirty = false;
+        if (previousPort !== nextConfig.listenPort) {
+            setTimeout(() => {
+                location.href = `http://127.0.0.1:${nextConfig.listenPort}/settings`;
+            }, 800);
+            return;
+        }
         await refresh();
     } catch (error) {
         $('message').textContent = error.message;
@@ -225,7 +241,7 @@ $('save').addEventListener('click', async () => {
 
 $('start').addEventListener('click', () => action('/api/start', 'Receiving started.'));
 $('stop').addEventListener('click', () => action('/api/stop', 'Receiving stopped.'));
-['gpsHost', 'gpsPort', 'runAtStartup', 'startReceivingOnRun'].forEach(id => {
+['gpsHost', 'gpsPort', 'listenPort', 'runAtStartup', 'startReceivingOnRun'].forEach(id => {
     $(id).addEventListener('input', () => {
         formDirty = true;
     });
