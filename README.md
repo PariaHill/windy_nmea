@@ -24,6 +24,13 @@ The settings page opens automatically. Configure:
 - Run automatically when Windows starts
 - Start receiving automatically when this program runs
 
+The program stays available in the Windows system tray. Use the tray menu to:
+
+- Open Settings
+- Start Receiving
+- Stop Receiving
+- Quit
+
 The Windy plugin bridge endpoint is:
 
 ```text

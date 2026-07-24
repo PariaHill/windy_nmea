@@ -2,7 +2,7 @@ import type { ExternalPluginConfig } from '@windy/interfaces';
 
 const config: ExternalPluginConfig = {
     name: 'windy-plugin-nmea',
-    version: '0.1.0',
+    version: '0.1.2',
     icon: '📍',
     title: 'NMEA Markers',
     description: 'Display NMEA position markers on Windy.',

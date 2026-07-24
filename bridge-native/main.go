@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/getlantern/systray"
 	"github.com/gorilla/websocket"
 	"golang.org/x/sys/windows/registry"
 )
@@ -395,6 +396,8 @@ func main() {
 
 	address := net.JoinHostPort(cfg.ListenHost, strconv.Itoa(cfg.ListenPort))
 	settingsURL := fmt.Sprintf("http://%s/settings", address)
+	server := &http.Server{Addr: address, Handler: mux}
+
 	if len(os.Args) == 1 {
 		go func() {
 			time.Sleep(500 * time.Millisecond)
@@ -404,7 +407,45 @@ func main() {
 
 	log.Printf("Windy NMEA Bridge listening at ws://%s", address)
 	log.Printf("Settings: %s", settingsURL)
-	if err := http.ListenAndServe(address, mux); err != nil {
-		log.Fatal(err)
-	}
+	go func() {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal(err)
+		}
+	}()
+
+	systray.Run(
+		func() {
+			systray.SetIcon(trayIconBytes())
+			systray.SetTitle("Windy NMEA Bridge")
+			systray.SetTooltip("Windy NMEA Bridge")
+
+			openSettings := systray.AddMenuItem("Open Settings", "Open bridge settings")
+			start := systray.AddMenuItem("Start Receiving", "Start receiving Trimble NMEA")
+			stop := systray.AddMenuItem("Stop Receiving", "Stop receiving Trimble NMEA")
+			systray.AddSeparator()
+			quit := systray.AddMenuItem("Quit", "Quit Windy NMEA Bridge")
+
+			go func() {
+				for {
+					select {
+					case <-openSettings.ClickedCh:
+						openBrowser(settingsURL)
+					case <-start.ClickedCh:
+						app.startReceiving()
+					case <-stop.ClickedCh:
+						app.stopReceiving()
+					case <-quit.ClickedCh:
+						systray.Quit()
+						return
+					}
+				}
+			}()
+		},
+		func() {
+			app.stopReceiving()
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			_ = server.Shutdown(ctx)
+		},
+	)
 }

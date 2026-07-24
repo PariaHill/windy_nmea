@@ -12,12 +12,12 @@
 
     <form class="settings" on:submit|preventDefault={connect}>
         <label class="field">
-            <span class="field__label">Trimble GPS IP</span>
+            <span class="field__label">Bridge IP</span>
             <input
                 class:error={!isEndpointValid}
                 bind:value={endpoint}
                 class="field__input"
-                placeholder="192.168.0.10:5017"
+                placeholder="127.0.0.1:8787"
                 spellcheck="false"
             />
         </label>
@@ -95,7 +95,7 @@
     let openedPopup: L.Popup | null = null;
     let currentPosition: NmeaPosition | null = null;
     let lastSentence = '';
-    let statusMessage = 'Enter the NMEA source and connect.';
+    let statusMessage = 'Enter the bridge endpoint and connect.';
     let connectionState: 'idle' | 'connecting' | 'connected' | 'error' = 'idle';
     let receiveBuffer = '';
 
@@ -264,7 +264,7 @@
 
         socket.onerror = () => {
             connectionState = 'error';
-            statusMessage = 'Connection failed. If the GPS outputs raw TCP, run the NMEA bridge first.';
+            statusMessage = 'Connection failed. Check that Windy NMEA Bridge is running.';
         };
 
         socket.onclose = () => {
